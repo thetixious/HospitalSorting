@@ -3,22 +3,20 @@ import Auth from './components/AuthComponent.vue'
 </script>
 
 <template>
-  <header>
-    <img alt="Vue logo" class="logo" src="./assets/logo.svg" width="125" height="125" />
 
-    <div class="wrapper">
-      <HelloWorld msg="You did it!" />
-    </div>
-  </header>
+  <div id="app">
+      <Auth class="auth-container"></Auth>
 
-  <main>
-    <Auth />
-  </main>
+  </div>
+
 </template>
 
 <style scoped>
 header {
   line-height: 1.5;
+  display: flex;
+  align-items: center; /* Центрирование по вертикали */
+  justify-content: center;
 }
 
 .logo {
@@ -27,6 +25,7 @@ header {
 }
 
 @media (min-width: 1024px) {
+
   header {
     display: flex;
     place-items: center;
@@ -41,6 +40,16 @@ header {
     display: flex;
     place-items: flex-start;
     flex-wrap: wrap;
+  }
+  #app {
+    height: 100%;
+    width: 100%;
+  }
+
+  html, body {
+    height: 100%;
+    margin: 0;
+    padding: 0;
   }
 }
 </style>

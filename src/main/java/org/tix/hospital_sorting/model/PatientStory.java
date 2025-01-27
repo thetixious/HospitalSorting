@@ -1,8 +1,17 @@
 package org.tix.hospital_sorting.model;
 
-import lombok.Data;
+import jakarta.persistence.Entity;
+import jakarta.persistence.Id;
+import lombok.Getter;
+import lombok.Setter;
 
-@Data
+@Getter
+@Setter
+@Entity
 public class PatientStory {
+    @Id
+    private Long id;
+    private String story;
+    private String category;
 
 }

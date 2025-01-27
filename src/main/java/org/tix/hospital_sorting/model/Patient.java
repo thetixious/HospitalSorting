@@ -19,8 +19,9 @@ public class Patient {
     private String name;
     private String surname;
     private String passport;
-
+    @ManyToOne
     private Staff staff;
+    @ManyToOne
     private PatientStory patientStory;
 
 
