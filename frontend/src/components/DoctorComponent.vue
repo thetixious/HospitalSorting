@@ -1,75 +1,163 @@
-<script setup>
-import { ref } from 'vue';
-
-// Пример данных пациентов
-const patients = ref([
-  { id: 1, name: 'Алексей Иванов', age: 35, diagnosis: 'Грипп' },
-  { id: 2, name: 'Мария Смирнова', age: 28, diagnosis: 'ОРВИ' },
-  { id: 3, name: 'Иван Петров', age: 42, diagnosis: 'Ангина' },
-  { id: 4, name: 'Елена Сидорова', age: 50, diagnosis: 'Пневмония' },
-  { id: 5, name: 'Дмитрий Орлов', age: 31, diagnosis: 'Гастрит' },
-]);
-</script>
-
 <template>
-  <div class="doctor-page">
-    <h1>Список пациентов</h1>
-    <div class="patients-grid">
-      <div v-for="patient in patients" :key="patient.id" class="patient-card">
-        <h2>{{ patient.name }}</h2>
-        <p><strong>Возраст:</strong> {{ patient.age }}</p>
-        <p><strong>Диагноз:</strong> {{ patient.diagnosis }}</p>
-      </div>
-    </div>
+  <div class="doctor-container">
+    <h2>Очередь пациентов</h2>
+
+    <div v-if="loading">Загрузка...</div>
+
+    <table v-else>
+      <thead>
+      <tr>
+        <th>Уровень</th>
+        <th>ФИО</th>
+        <th>Возраст</th>
+        <th>Симптомы</th>
+        <th>Время поступления</th>
+        <th>Действия</th>
+      </tr>
+      </thead>
+      <tbody>
+      <tr v-for="patient in sortedQueue" :key="patient.id"
+          :class="'triage-' + patient.triageLevel">
+        <td>{{ patient.triageLevel }}</td>
+        <td>{{ patient.name }}</td>
+        <td>{{ patient.age }}</td>
+        <td>{{ patient.symptoms }}</td>
+        <td>{{ formatDate(patient.admissionTime) }}</td>
+        <td>
+          <select v-model="patient.newTriage" @change="updateTriage(patient)">
+            <option v-for="n in 5" :value="n" :selected="n === patient.triageLevel">
+              {{ n }} ({{ triageLabels[n] }})
+            </option>
+          </select>
+          <button @click="dischargePatient(patient.id)">Выписать</button>
+        </td>
+      </tr>
+      </tbody>
+    </table>
   </div>
 </template>
 
+<script>
+import axios from 'axios';
+
+export default {
+  data() {
+    return {
+      loading: true,
+      patients: [],
+      triageLabels: {
+        1: 'Реанимация',
+        2: 'Срочно',
+        3: 'Промежуточный',
+        4: 'Низкий приоритет',
+        5: 'Не срочно'
+      }
+    }
+  },
+  computed: {
+    sortedQueue() {
+      return [...this.patients].sort((a, b) => {
+        if (a.triageLevel === b.triageLevel) {
+          return new Date(a.admissionTime) - new Date(b.admissionTime);
+        }
+        return a.triageLevel - b.triageLevel;
+      });
+    }
+  },
+  async created() {
+    await this.fetchQueue();
+  },
+  methods: {
+    async fetchQueue() {
+      try {
+        const response = await axios.get('/doctor/queue');
+        this.patients = response.data.map(p => ({
+          ...p,
+          newTriage: p.triageLevel
+        }));
+      } catch (error) {
+        this.$toast.error('Ошибка загрузки очереди');
+      } finally {
+        this.loading = false;
+      }
+    },
+
+    async updateTriage(patient) {
+      try {
+        await axios.put(`/doctor/triage/${patient.id}`, null, {
+          params: { newLevel: patient.newTriage }
+        });
+        this.$toast.success('Уровень срочности обновлён');
+        await this.fetchQueue();
+      } catch (error) {
+        this.$toast.error('Ошибка обновления');
+      }
+    },
+
+    async dischargePatient(id) {
+      try {
+        await axios.delete(`/doctor/triage/${id}`);
+        this.$toast.success('Пациент выписан');
+        await this.fetchQueue();
+      } catch (error) {
+        this.$toast.error('Ошибка выписки');
+      }
+    },
+
+    formatDate(dateString) {
+      const options = {
+        year: 'numeric',
+        month: 'short',
+        day: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit'
+      };
+      return new Date(dateString).toLocaleString('ru-RU', options);
+    }
+  }
+}
+</script>
+
 <style scoped>
-.doctor-page {
-  max-width: 800px;
-  margin: 0 auto;
+.doctor-container {
+  max-width: 1200px;
+  margin: 20px auto;
   padding: 20px;
-  font-family: Arial, sans-serif;
 }
 
-h1 {
-  text-align: center;
-  margin-bottom: 20px;
+table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 20px;
 }
 
-.patients-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-  gap: 20px;
+th, td {
+  padding: 12px;
+  text-align: left;
+  border-bottom: 1px solid #ddd;
 }
 
-.patient-card {
-  background-color: #f9f9f9;
-  border: 1px solid #ddd;
-  border-radius: 8px;
-  padding: 15px;
-  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-  text-align: center;
-  transition: transform 0.2s, box-shadow 0.2s;
+tr:hover {
+  background-color: #f5f5f5;
 }
 
-.patient-card:hover {
-  transform: translateY(-5px);
-  box-shadow: 0 6px 10px rgba(0, 0, 0, 0.15);
+select {
+  padding: 5px;
+  margin-right: 10px;
 }
 
-.patient-card h2 {
-  font-size: 1.2rem;
-  margin-bottom: 10px;
-  color: #333;
+button {
+  background: #f44336;
+  color: white;
+  border: none;
+  padding: 8px 12px;
+  border-radius: 4px;
+  cursor: pointer;
 }
 
-.patient-card p {
-  margin: 5px 0;
-  color: #666;
-}
-
-.patient-card p strong {
-  color: #333;
-}
+.triage-1 { background-color: #ffebee; }
+.triage-2 { background-color: #fff3e0; }
+.triage-3 { background-color: #fffde7; }
+.triage-4 { background-color: #f1f8e9; }
+.triage-5 { background-color: #f5f5f5; }
 </style>

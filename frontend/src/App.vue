@@ -1,5 +1,6 @@
 <script setup>
 import Auth from './components/AuthComponent.vue'
+import DoctorComponent from "@/components/DoctorComponent.vue";
 </script>
 
 <template>
