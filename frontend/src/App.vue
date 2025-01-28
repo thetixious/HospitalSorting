@@ -1,11 +1,13 @@
 <script setup>
 import Auth from './components/AuthComponent.vue'
 import DoctorComponent from "@/components/DoctorComponent.vue";
+import NurseComponent from "@/components/NurseComponent.vue";
 </script>
 
 <template>
 
   <div id="app">
+
       <Auth class="auth-container"></Auth>
 
   </div>

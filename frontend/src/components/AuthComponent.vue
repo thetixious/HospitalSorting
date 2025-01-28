@@ -2,96 +2,71 @@
 import { ref } from 'vue';
 import { useRouter } from 'vue-router';
 import axios from 'axios';
-import doctor from '../components/DoctorComponent.vue';
-import nurse from '../components/NurseComponent.vue';
 
 const router = useRouter();
-// Form data references
+
 const username = ref('');
 const password = ref('');
-const confirmPassword = ref('');
 const errorMessage = ref('');
-const successMessage = ref('');
 
-const registerUser = async () => {
-  errorMessage.value = '';
-  successMessage.value = '';
-
-  if (password.value !== confirmPassword.value) {
-    errorMessage.value = 'Passwords do not match';
-    return;
-  }
-
+const handleLogin = async () => {
   try {
     const response = await axios.post('http://localhost:8080/auth/logIn', {
       username: username.value,
-      password: password.value,
+      password: password.value
     });
 
-    if (response.status === 200) {
-      successMessage.value = 'Registration successful!';
-      const role = response.data; // Получаем роль из ответа сервера
+    // Предполагаем, что сервер возвращает объект с пользователем и токеном
+    const { position, token } = response.data;
 
-      if (role === 'doctor') {
-        await router.push('/doctor'); // Редирект на страницу врача
+    // Сохраняем токен в localStorage
+    localStorage.setItem('authToken', token);
 
-      } else if (role === 'nurse') {
-        await router.push('/nurse'); // Редирект на страницу медсестры
-      } else {
-        successMessage.value = 'Unknown role, login successful!';
-      }
+    // Сохраняем роль
+    localStorage.setItem('userRole', position);
 
+    // Редирект по роли
+    if (position === 'doctor') {
+      await router.push('/doctor');
+    } else if (position === 'nurse') {
+      await router.push('/nurse');
     }
+
   } catch (error) {
-    errorMessage.value = error.response?.data?.message || 'An error occurred during registration.';
+    errorMessage.value = error.response?.data?.message || 'Ошибка авторизации';
   }
 };
 </script>
 
 <template>
-  <div class="registration-container">
-    <h2>Sign In</h2>
+  <div class="auth-container">
+    <h2>Вход в систему</h2>
 
-    <form @submit.prevent="registerUser" class="registration-form">
+    <form @submit.prevent="handleLogin">
       <div class="form-group">
-        <label for="username">Username</label>
-        <input id="username" v-model="username" type="text" required placeholder="Enter your username" />
+        <label>Логин:</label>
+        <input v-model="username" type="text" required>
       </div>
 
       <div class="form-group">
-        <label for="password">Password</label>
-        <input id="password" v-model="password" type="password" required placeholder="Enter your password" />
+        <label>Пароль:</label>
+        <input v-model="password" type="password" required>
       </div>
 
-      <div class="form-group">
-        <label for="confirm-password">Confirm Password</label>
-        <input id="confirm-password" v-model="confirmPassword" type="password" required placeholder="Confirm your password" />
-      </div>
+      <button type="submit">Войти</button>
 
-
-      <button type="submit" class="register-button">Register</button>
-      <p v-if="errorMessage" class="error-message">{{ errorMessage }}</p>
-      <p v-if="successMessage" class="success-message">{{ successMessage }}</p>
+      <p v-if="errorMessage" class="error">{{ errorMessage }}</p>
     </form>
   </div>
 </template>
 
 <style scoped>
-.registration-container {
+.auth-container {
   max-width: 400px;
-  margin: 0 auto;
+  margin: 2rem auto;
   padding: 2rem;
   border: 1px solid #ddd;
   border-radius: 8px;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-  background-color: #ffffff;
-}
-
-h2 {
-  text-align: center;
-  margin-bottom: 1rem;
-  font-weight: bold;
-  color: #333;
 }
 
 .form-group {
@@ -101,44 +76,25 @@ h2 {
 label {
   display: block;
   margin-bottom: 0.5rem;
-  font-weight: bold;
-  color: #333;
-
 }
 
 input {
   width: 100%;
   padding: 0.5rem;
-  border: 1px solid #d5d5d5;
-  border-radius: 4px;
-  font-size: 1rem;
 }
 
-.register-button {
+button {
   width: 100%;
   padding: 0.75rem;
-  background-color: #007bff;
-  color: #090909;
+  background: #2196F3;
+  color: white;
   border: none;
   border-radius: 4px;
-  font-size: 1rem;
   cursor: pointer;
-  transition: background-color 0.3s ease;
 }
 
-.register-button:hover {
-  background-color: #0056b3;
-}
-
-.error-message {
-  color: #ff0000;
+.error {
+  color: red;
   margin-top: 1rem;
-  text-align: center;
-}
-
-.success-message {
-  color: #28a745;
-  margin-top: 1rem;
-  text-align: center;
 }
 </style>
